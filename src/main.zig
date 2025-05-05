@@ -2,60 +2,51 @@ const std = @import("std");
 const assert = std.debug.assert;
 
 // Options
-const dim_x: i32 = 1920;
-const dim_y: i32 = 1200;
-const max_iter: u32 = 256;
+const dim_x: i32 = 7680;
+const dim_y: i32 = 4800;
 
 pub export fn _start() callconv(.c) noreturn {
-    // Output File
-    const flags: u32 = 0b0000_0010_0100_0001;
-    const raw_fd = std.os.linux.open("out.ppm", @bitCast(flags), 0o644);
-    const fd: i32 = @bitCast(@as(u32, @intCast(raw_fd)));
-    defer std.os.linux.close(fd);
-
     // NetPPM Header
-    write(fd, std.fmt.comptimePrint("P5\n{} {}\n255\n", .{ dim_x, dim_y }));
+    const header = std.fmt.comptimePrint("P5\n{} {}\n255\n", .{ dim_x, dim_y });
+    write(header.ptr, header.len);
 
     const dim_x_2 = dim_x / 2;
     const dim_y_2 = dim_y / 2;
-    const norm: f32 = @floatFromInt(@max(dim_x_2, dim_y_2));
+    const norm: i32 = @max(dim_x_2, dim_y_2);
+    const scale = norm / 2;
+
+    const start_y = -dim_y_2;
+    const end_y = dim_y_2;
+
+    const start_x = -dim_x_2 - scale / 2;
+    const end_x = dim_x_2 - scale / 2;
 
     // Per-Pixel Render
-    for (0..dim_y) |y| {
-        for (0..dim_x) |x| {
-            const pos_x: i32 = @intCast(x);
-            const pos_y: i32 = @intCast(y);
+    var c_im: i32 = start_y;
+    while (c_im < end_y) : (c_im += 1) {
+        var c_re: i32 = start_x;
+        while (c_re < end_x) : (c_re += 1) {
+            var z_re: i32 = c_re;
+            var z_im: i32 = c_im;
 
-            const cpos_x: f32 = @floatFromInt(pos_x - dim_x_2);
-            const cpos_y: f32 = @floatFromInt(pos_y - dim_y_2);
-            const scale = 2.0 / norm;
+            var pixel: u8 = 0xFF;
 
-            const c_re = (cpos_x * scale) - 0.5;
-            const c_im = cpos_y * scale;
-
-            var z_re: f32 = 0;
-            var z_im: f32 = 0;
-
-            var color: u8 = 0xFF;
-
-            for (0..max_iter) |_| {
-                const z_re_2 = z_re * z_re;
-                const z_im_2 = z_im * z_im;
-                if (z_re_2 + z_im_2 > 8) color = 0;
+            while (pixel != 0) : (pixel -= 1) {
+                const z_re_2 = @divTrunc(z_re * z_re, scale);
+                const z_im_2 = @divTrunc(z_im * z_im, scale);
+                if (z_re_2 + z_im_2 > 8 * scale) break;
                 const temp = z_re_2 - z_im_2 + c_re;
-                z_im = 2 * z_re * z_im + c_im;
+                z_im = @divTrunc(2 * z_re * z_im, scale) + c_im;
                 z_re = temp;
             }
 
-            write(fd, &.{color});
+            write(&.{pixel}, 1);
         }
     }
 
-    std.os.linux.exit(0);
+    @trap();
 }
 
-fn write(fd: i32, bytes: []const u8) void {
-    const ptr = bytes.ptr;
-    const len = bytes.len;
-    assert(std.os.linux.write(fd, ptr, len) == len);
+noinline fn write(ptr: [*]const u8, len: usize) void {
+    assert(std.os.linux.write(1, ptr, len) == len);
 }
