@@ -15,7 +15,7 @@ const header = std.fmt.comptimePrint(
 const dim_x_2 = dim_x / 2;
 const dim_y_2 = dim_y / 2;
 const norm: i32 = @max(dim_x_2, dim_y_2);
-const scale = std.math.log2_int(u32, @intCast(norm / 2));
+const scale = std.math.log2_int_ceil(u32, @intCast(norm / 2));
 
 // Loop bounds
 const start_y = -dim_y_2;
