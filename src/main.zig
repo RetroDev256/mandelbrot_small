@@ -7,7 +7,10 @@ const dim_y: i32 = 4800;
 
 pub export fn _start() callconv(.c) noreturn {
     // NetPPM Header
-    const header = std.fmt.comptimePrint("P5\n{} {}\n255\n", .{ dim_x, dim_y });
+    const header = std.fmt.comptimePrint(
+        "P5\n{} {}\n255\n",
+        .{ dim_x, dim_y },
+    );
     write(header.ptr, header.len);
 
     const dim_x_2 = dim_x / 2;
@@ -16,10 +19,9 @@ pub export fn _start() callconv(.c) noreturn {
     const scale = norm / 2;
 
     const start_y = -dim_y_2;
-    const end_y = dim_y_2;
-
     const start_x = -dim_x_2 - scale / 2;
-    const end_x = dim_x_2 - scale / 2;
+    const end_y = start_y + dim_y;
+    const end_x = start_x + dim_x;
 
     // Per-Pixel Render
     var c_im: i32 = start_y;
