@@ -15,11 +15,11 @@ const header = std.fmt.comptimePrint(
 const dim_x_2 = dim_x / 2;
 const dim_y_2 = dim_y / 2;
 const norm: i32 = @max(dim_x_2, dim_y_2);
-const scale = std.math.floorPowerOfTwo(i32, norm / 2);
+const scale = std.math.log2_int(u32, @intCast(norm / 2));
 
 // Loop bounds
 const start_y = -dim_y_2;
-const start_x = -dim_x_2 - scale / 2;
+const start_x = -dim_x_2 - (1 << scale) / 2;
 const end_y = start_y + dim_y;
 const end_x = start_x + dim_x;
 
@@ -36,11 +36,11 @@ pub export fn _start() callconv(.c) noreturn {
             var pixel: u8 = 0xFF;
 
             while (pixel != 0) : (pixel -= 1) {
-                const z_re_2 = @divTrunc(z_re * z_re, scale);
-                const z_im_2 = @divTrunc(z_im * z_im, scale);
-                if (z_re_2 + z_im_2 > 8 * scale) break;
+                const z_re_2 = (z_re * z_re) >> scale;
+                const z_im_2 = (z_im * z_im) >> scale;
+                if (z_re_2 + z_im_2 > 8 << scale) break;
                 const temp = z_re_2 - z_im_2 + c_re;
-                z_im = @divTrunc(2 * z_re * z_im, scale) + c_im;
+                z_im = ((2 * z_re * z_im) >> scale) + c_im;
                 z_re = temp;
             }
 
