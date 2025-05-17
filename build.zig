@@ -39,7 +39,6 @@ pub fn build(b: *std.Build) !void {
         exe.setLinkerScript(b.path(if (risky) "linker_risky.ld" else "linker_safe.ld"));
         // toggle compiler options (exe)
         exe.bundle_compiler_rt = false;
-        exe.no_builtin = true;
         exe.link_data_sections = true;
         exe.link_function_sections = true;
         // Module options
